@@ -17,6 +17,7 @@ on:
         required: true
         options:
           - probe-absent
+          - probe-neighbor
           - publish
           - manual-preview
       mode:
@@ -214,6 +215,39 @@ jobs:
           AWS_PROOF_BUCKET: ap-proof-231136241959-20261018
           AWS_PROOF_SITE: proof-a-20261018
         run: node scripts/aws-absent-probe.mjs
+
+  neighbor-probe-a:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.site == 'proof-a-20261018' && inputs.operation == 'probe-neighbor' }}
+    runs-on: ubuntu-24.04
+    environment: proof-site-a
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out full main history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Derive and compare the proof-a role ARN
+        id: role
+        env:
+          ARTIFACT_PAGES_LANE: baseline
+          ARTIFACT_PAGES_SITE: proof-a-20261018
+          ARTIFACT_PAGES_EXPECTED_ROLE_ARN: ${{ vars.ARTIFACT_PAGES_PROOF_A_ROLE_ARN }}
+        run: ./scripts/derive-site-role.sh
+      - name: Assume the matching satellite role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ steps.role.outputs.role-arn }}
+          aws-region: us-east-1
+          role-session-name: provider-proof-a-p1
+      - name: Probe known existing neighboring objects
+        env:
+          AWS_PROOF_BUCKET: ap-proof-231136241959-20261018
+          AWS_PROOF_SITE: proof-a-20261018
+        run: node scripts/aws-neighbor-probe.mjs
 
   probe-b:
     if: ${{ github.ref == 'refs/heads/main' && inputs.site == 'proof-b-20261018' && inputs.operation == 'probe-absent' }}
