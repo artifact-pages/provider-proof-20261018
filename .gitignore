@@ -1,0 +1,6 @@
+.local/a9-generated/
+.local/registry-setup-0.4.4/
+sites/a/.a9-generated/
+node_modules/
+playwright-report/
+test-results/

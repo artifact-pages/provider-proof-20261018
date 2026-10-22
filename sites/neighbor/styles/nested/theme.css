@@ -1,0 +1,9 @@
+html {
+  --proof-transitive-css: loaded;
+}
+
+main {
+  max-width: 52rem;
+  margin: 2rem auto;
+  padding: 1rem;
+}

@@ -1,0 +1,14 @@
+{
+  "name": "provider-proof-20261018-fixture",
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "probe:browser": "node scripts/browser-probe.mjs",
+    "probe:origin": "node scripts/origin-probe.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

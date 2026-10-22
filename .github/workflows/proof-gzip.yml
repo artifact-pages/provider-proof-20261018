@@ -1,0 +1,146 @@
+name: Provider proof A9 gzip lane
+
+# A9 Action SHAs must be replaced with the verified v0.3.0 package commits
+# before this workflow is dispatchable. The CLI version stays pinned in the
+# separate artifact-pages.a9.yaml config.
+# TODO_VERIFY_SHA_PUBLISH_V0_3_0: artifact-pages/publish-action; replace with the verified package commit.
+# TODO_VERIFY_SHA_PREVIEW_V0_3_0: artifact-pages/preview-action; verify the tuple even though this lane does not call preview.
+# TODO_VERIFY_SHA_REGISTRY_V0_3_0: artifact-pages/registry-action; replace with the verified package commit.
+# TODO_VERIFY_SHA_APP_DEPLOY_V0_3_0: artifact-pages/app-deploy-action; replace with the verified package commit.
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Select one fixed A9 operation.
+        type: choice
+        required: true
+        options:
+          - app-dry-run
+          - app-deploy
+          - registry-dry-run
+          - registry-sync
+          - site-a-migrate-dry-run
+          - site-a-migrate-sync
+          - site-a-small-dry-run
+          - site-a-small-sync
+          - site-a-large-dry-run
+          - site-a-large-sync
+          - legacy-044-prewrite-rejection
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: provider-proof-a9-gzip
+  cancel-in-progress: false
+
+jobs:
+  a9-admin:
+    if: ${{ github.ref == 'refs/heads/main' && (inputs.operation == 'app-dry-run' || inputs.operation == 'app-deploy' || inputs.operation == 'registry-dry-run' || inputs.operation == 'registry-sync') }}
+    runs-on: ubuntu-24.04
+    environment: proof-admin
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Assume the reference admin role through OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.ARTIFACT_PAGES_REGISTRY_ADMIN_ROLE_ARN }}
+          aws-region: us-east-1
+          role-session-name: provider-proof-a9-admin
+      - name: Deploy or dry-run the A9 reader app
+        if: ${{ inputs.operation == 'app-dry-run' || inputs.operation == 'app-deploy' }}
+        uses: artifact-pages/app-deploy-action@TODO_VERIFY_SHA_APP_DEPLOY_V0_3_0 # v0.3.0
+        with:
+          config: artifact-pages.a9.yaml
+          cli-version: 0.5.1
+          dry-run: ${{ inputs.operation == 'app-dry-run' }}
+          publish-on: workflow_dispatch:refs/heads/main
+          summary: true
+      - name: Sync or dry-run the A9 registry
+        if: ${{ inputs.operation == 'registry-dry-run' || inputs.operation == 'registry-sync' }}
+        uses: artifact-pages/registry-action@TODO_VERIFY_SHA_REGISTRY_V0_3_0 # v0.3.0
+        with:
+          config: artifact-pages.a9.yaml
+          cli-version: 0.5.1
+          dry-run: ${{ inputs.operation == 'registry-dry-run' }}
+          publish-on: workflow_dispatch:refs/heads/main
+          summary: true
+
+  a9-site-a:
+    if: ${{ github.ref == 'refs/heads/main' && (inputs.operation == 'site-a-migrate-dry-run' || inputs.operation == 'site-a-migrate-sync' || inputs.operation == 'site-a-small-dry-run' || inputs.operation == 'site-a-small-sync' || inputs.operation == 'site-a-large-dry-run' || inputs.operation == 'site-a-large-sync') }}
+    runs-on: ubuntu-24.04
+    environment: proof-site-a
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out main with full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Generate the selected small or large synthetic source fixture
+        if: ${{ inputs.operation == 'site-a-small-dry-run' || inputs.operation == 'site-a-small-sync' || inputs.operation == 'site-a-large-dry-run' || inputs.operation == 'site-a-large-sync' }}
+        env:
+          A9_FIXTURE_SIZE: ${{ contains(inputs.operation, 'large') && 'large' || 'small' }}
+        run: node scripts/generate-a9-fixtures.mjs "$A9_FIXTURE_SIZE"
+      - name: Derive and compare the A9 proof-a role ARN
+        id: role
+        env:
+          ARTIFACT_PAGES_LANE: a9
+          ARTIFACT_PAGES_SITE: proof-a-20261018
+          ARTIFACT_PAGES_EXPECTED_ROLE_ARN: ${{ vars.ARTIFACT_PAGES_PROOF_A_ROLE_ARN }}
+        run: ./scripts/derive-site-role.sh
+      - name: Assume the matching proof-a satellite role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ steps.role.outputs.role-arn }}
+          aws-region: us-east-1
+          role-session-name: provider-proof-a9-site-a
+      - name: Publish or dry-run the gzip-migrated proof-a site
+        uses: artifact-pages/publish-action@TODO_VERIFY_SHA_PUBLISH_V0_3_0 # v0.3.0
+        with:
+          site: proof-a-20261018
+          source: sites/a
+          config: artifact-pages.a9.yaml
+          cli-version: 0.5.1
+          dry-run: ${{ inputs.operation == 'site-a-migrate-dry-run' || inputs.operation == 'site-a-small-dry-run' || inputs.operation == 'site-a-large-dry-run' }}
+          publish-on: workflow_dispatch:refs/heads/main
+          summary: true
+          checkout: false
+          fetch-depth: 0
+
+  legacy-044-rejection:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.operation == 'legacy-044-prewrite-rejection' }}
+    runs-on: ubuntu-24.04
+    environment: proof-site-a
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out main with full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Derive and compare the baseline proof-a role ARN
+        id: role
+        env:
+          ARTIFACT_PAGES_LANE: baseline
+          ARTIFACT_PAGES_SITE: proof-a-20261018
+          ARTIFACT_PAGES_EXPECTED_ROLE_ARN: ${{ vars.ARTIFACT_PAGES_PROOF_A_ROLE_ARN }}
+        run: ./scripts/derive-site-role.sh
+      - name: Assume the matching proof-a satellite role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ steps.role.outputs.role-arn }}
+          aws-region: us-east-1
+          role-session-name: provider-proof-a9-legacy-check
+      - name: Confirm released CLI 0.4.4 rejects migrated gzip state before writing
+        run: node scripts/check-a9-legacy-rejection.mjs

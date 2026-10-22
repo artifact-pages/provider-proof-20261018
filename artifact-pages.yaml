@@ -1,0 +1,29 @@
+cli:
+  version: 0.4.4
+web:
+  version: 0.3.2
+schemaVersion: 1
+provider: aws
+aws:
+  accountId: "231136241959"
+  namePrefix: ap-proof-20261018
+  region: us-east-1
+  bucket: __SET_FROM_TERRAFORM_OUTPUT_BUCKET_NAME__
+  distributionId: __SET_FROM_TERRAFORM_OUTPUT_DISTRIBUTION_ID__
+publicBaseURL: https://__SET_FROM_TERRAFORM_OUTPUT_DISTRIBUTION_DOMAIN__
+sites:
+  proof-a-20261018:
+    name: Provider proof A
+    description: Primary AWS provider proof site and A9 fixture target.
+    repository: artifact-pages/provider-proof-20261018
+    sourcePath: sites/a
+  proof-b-20261018:
+    name: Provider proof B
+    description: Warm application rollback and neighbor-boundary proof site.
+    repository: artifact-pages/provider-proof-20261018
+    sourcePath: sites/b
+  proof-neighbor-20261018:
+    name: Provider proof neighbor
+    description: Existing neighbor marker for cross-site denial checks.
+    repository: artifact-pages/provider-proof-20261018
+    sourcePath: sites/neighbor

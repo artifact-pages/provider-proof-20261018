@@ -1,0 +1,1 @@
+This deterministic byte fixture uses a font extension so origin MIME and path delivery can be checked without depending on a system font.

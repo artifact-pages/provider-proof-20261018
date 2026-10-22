@@ -1,0 +1,420 @@
+name: Provider proof site
+
+on:
+  workflow_dispatch:
+    inputs:
+      site:
+        description: Fixed registered site and protected environment mapping.
+        type: choice
+        required: true
+        options:
+          - proof-a-20261018
+          - proof-b-20261018
+          - proof-neighbor-20261018
+      operation:
+        description: Select one reviewed site operation.
+        type: choice
+        required: true
+        options:
+          - probe-absent
+          - publish
+          - manual-preview
+      mode:
+        description: Dry-run is the default for publication and preview.
+        type: choice
+        required: true
+        default: dry-run
+        options:
+          - dry-run
+          - write
+      reviewed_head:
+        description: Full reviewed commit SHA; required for a manual preview.
+        type: string
+        required: false
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: provider-proof-site-${{ inputs.site }}
+  cancel-in-progress: false
+
+jobs:
+  publish-a:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.site == 'proof-a-20261018' && inputs.operation == 'publish' && inputs.mode == 'write' }}
+    uses: ./.github/workflows/publish-site.yml
+    with:
+      site: proof-a-20261018
+      environment: proof-site-a
+
+  publish-b:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.site == 'proof-b-20261018' && inputs.operation == 'publish' && inputs.mode == 'write' }}
+    uses: ./.github/workflows/publish-site.yml
+    with:
+      site: proof-b-20261018
+      environment: proof-site-b
+
+  publish-neighbor:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.site == 'proof-neighbor-20261018' && inputs.operation == 'publish' && inputs.mode == 'write' }}
+    uses: ./.github/workflows/publish-site.yml
+    with:
+      site: proof-neighbor-20261018
+      environment: proof-neighbor
+
+  publish-dry-run-a:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.site == 'proof-a-20261018' && inputs.operation == 'publish' && inputs.mode == 'dry-run' }}
+    runs-on: ubuntu-24.04
+    environment: proof-site-a
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out full main history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Derive and compare the proof-a role ARN
+        id: role
+        env:
+          ARTIFACT_PAGES_LANE: baseline
+          ARTIFACT_PAGES_SITE: proof-a-20261018
+          ARTIFACT_PAGES_EXPECTED_ROLE_ARN: ${{ vars.ARTIFACT_PAGES_PROOF_A_ROLE_ARN }}
+        run: ./scripts/derive-site-role.sh
+      - name: Assume the matching satellite role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ steps.role.outputs.role-arn }}
+          aws-region: us-east-1
+          role-session-name: provider-proof-a-publish-dry-run
+      - name: Plan the proof-a site publication without writes
+        uses: artifact-pages/publish-action@8d66d7a606fc047715d25e8acdb8f09309ad4991 # v0.2.0
+        with:
+          site: proof-a-20261018
+          source: sites/a
+          config: artifact-pages.yaml
+          cli-version: 0.4.4
+          dry-run: true
+          publish-on: workflow_dispatch:refs/heads/main
+          summary: true
+          checkout: false
+          fetch-depth: 0
+
+  publish-dry-run-b:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.site == 'proof-b-20261018' && inputs.operation == 'publish' && inputs.mode == 'dry-run' }}
+    runs-on: ubuntu-24.04
+    environment: proof-site-b
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out full main history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Derive and compare the proof-b role ARN
+        id: role
+        env:
+          ARTIFACT_PAGES_LANE: baseline
+          ARTIFACT_PAGES_SITE: proof-b-20261018
+          ARTIFACT_PAGES_EXPECTED_ROLE_ARN: ${{ vars.ARTIFACT_PAGES_PROOF_B_ROLE_ARN }}
+        run: ./scripts/derive-site-role.sh
+      - name: Assume the matching satellite role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ steps.role.outputs.role-arn }}
+          aws-region: us-east-1
+          role-session-name: provider-proof-b-publish-dry-run
+      - name: Plan the proof-b site publication without writes
+        uses: artifact-pages/publish-action@8d66d7a606fc047715d25e8acdb8f09309ad4991 # v0.2.0
+        with:
+          site: proof-b-20261018
+          source: sites/b
+          config: artifact-pages.yaml
+          cli-version: 0.4.4
+          dry-run: true
+          publish-on: workflow_dispatch:refs/heads/main
+          summary: true
+          checkout: false
+          fetch-depth: 0
+
+  publish-dry-run-neighbor:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.site == 'proof-neighbor-20261018' && inputs.operation == 'publish' && inputs.mode == 'dry-run' }}
+    runs-on: ubuntu-24.04
+    environment: proof-neighbor
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out full main history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Derive and compare the neighbor role ARN
+        id: role
+        env:
+          ARTIFACT_PAGES_LANE: baseline
+          ARTIFACT_PAGES_SITE: proof-neighbor-20261018
+          ARTIFACT_PAGES_EXPECTED_ROLE_ARN: ${{ vars.ARTIFACT_PAGES_PROOF_NEIGHBOR_ROLE_ARN }}
+        run: ./scripts/derive-site-role.sh
+      - name: Assume the matching satellite role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ steps.role.outputs.role-arn }}
+          aws-region: us-east-1
+          role-session-name: provider-proof-neighbor-publish-dry-run
+      - name: Plan the neighbor publication without writes
+        uses: artifact-pages/publish-action@8d66d7a606fc047715d25e8acdb8f09309ad4991 # v0.2.0
+        with:
+          site: proof-neighbor-20261018
+          source: sites/neighbor
+          config: artifact-pages.yaml
+          cli-version: 0.4.4
+          dry-run: true
+          publish-on: workflow_dispatch:refs/heads/main
+          summary: true
+          checkout: false
+          fetch-depth: 0
+
+  probe-a:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.site == 'proof-a-20261018' && inputs.operation == 'probe-absent' }}
+    runs-on: ubuntu-24.04
+    environment: proof-site-a
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out full main history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Derive and compare the proof-a role ARN
+        id: role
+        env:
+          ARTIFACT_PAGES_LANE: baseline
+          ARTIFACT_PAGES_SITE: proof-a-20261018
+          ARTIFACT_PAGES_EXPECTED_ROLE_ARN: ${{ vars.ARTIFACT_PAGES_PROOF_A_ROLE_ARN }}
+        run: ./scripts/derive-site-role.sh
+      - name: Assume the matching satellite role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ steps.role.outputs.role-arn }}
+          aws-region: us-east-1
+          role-session-name: provider-proof-a-p2
+      - name: Record fresh-bucket absent probes
+        env:
+          AWS_PROOF_BUCKET: ap-proof-231136241959-20261018
+          AWS_PROOF_SITE: proof-a-20261018
+        run: node scripts/aws-absent-probe.mjs
+
+  probe-b:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.site == 'proof-b-20261018' && inputs.operation == 'probe-absent' }}
+    runs-on: ubuntu-24.04
+    environment: proof-site-b
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out full main history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Derive and compare the proof-b role ARN
+        id: role
+        env:
+          ARTIFACT_PAGES_LANE: baseline
+          ARTIFACT_PAGES_SITE: proof-b-20261018
+          ARTIFACT_PAGES_EXPECTED_ROLE_ARN: ${{ vars.ARTIFACT_PAGES_PROOF_B_ROLE_ARN }}
+        run: ./scripts/derive-site-role.sh
+      - name: Assume the matching satellite role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ steps.role.outputs.role-arn }}
+          aws-region: us-east-1
+          role-session-name: provider-proof-b-p2
+      - name: Record fresh-bucket absent probes
+        env:
+          AWS_PROOF_BUCKET: ap-proof-231136241959-20261018
+          AWS_PROOF_SITE: proof-b-20261018
+        run: node scripts/aws-absent-probe.mjs
+
+  probe-neighbor:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.site == 'proof-neighbor-20261018' && inputs.operation == 'probe-absent' }}
+    runs-on: ubuntu-24.04
+    environment: proof-neighbor
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out full main history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Derive and compare the neighbor role ARN
+        id: role
+        env:
+          ARTIFACT_PAGES_LANE: baseline
+          ARTIFACT_PAGES_SITE: proof-neighbor-20261018
+          ARTIFACT_PAGES_EXPECTED_ROLE_ARN: ${{ vars.ARTIFACT_PAGES_PROOF_NEIGHBOR_ROLE_ARN }}
+        run: ./scripts/derive-site-role.sh
+      - name: Assume the matching satellite role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ steps.role.outputs.role-arn }}
+          aws-region: us-east-1
+          role-session-name: provider-proof-neighbor-p2
+      - name: Record fresh-bucket absent probes
+        env:
+          AWS_PROOF_BUCKET: ap-proof-231136241959-20261018
+          AWS_PROOF_SITE: proof-neighbor-20261018
+        run: node scripts/aws-absent-probe.mjs
+
+  preview-a:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.site == 'proof-a-20261018' && inputs.operation == 'manual-preview' }}
+    runs-on: ubuntu-24.04
+    environment: proof-site-a
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out main with full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify the reviewed preview head and merge base
+        env:
+          ARTIFACT_PAGES_REVIEWED_HEAD: ${{ inputs.reviewed_head }}
+        run: ./scripts/validate-manual-preview-head.sh
+      - name: Derive and compare the proof-a role ARN
+        id: role
+        env:
+          ARTIFACT_PAGES_LANE: baseline
+          ARTIFACT_PAGES_SITE: proof-a-20261018
+          ARTIFACT_PAGES_EXPECTED_ROLE_ARN: ${{ vars.ARTIFACT_PAGES_PROOF_A_ROLE_ARN }}
+        run: ./scripts/derive-site-role.sh
+      - name: Assume the matching satellite role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ steps.role.outputs.role-arn }}
+          aws-region: us-east-1
+          role-session-name: provider-proof-a-preview
+      - name: Publish or dry-run the manually reviewed preview
+        uses: artifact-pages/preview-action@d4d96885d0d430bbe1591d3cc11207d92e680339 # v0.2.0
+        with:
+          site: proof-a-20261018
+          source: sites/a
+          head: ${{ inputs.reviewed_head }}
+          default-ref: refs/heads/main
+          pull-request: none
+          config: artifact-pages.yaml
+          dry-run: ${{ inputs.mode == 'dry-run' }}
+          comment: false
+          summary: true
+          checkout: false
+          fetch-depth: 0
+
+  preview-b:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.site == 'proof-b-20261018' && inputs.operation == 'manual-preview' }}
+    runs-on: ubuntu-24.04
+    environment: proof-site-b
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out main with full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify the reviewed preview head and merge base
+        env:
+          ARTIFACT_PAGES_REVIEWED_HEAD: ${{ inputs.reviewed_head }}
+        run: ./scripts/validate-manual-preview-head.sh
+      - name: Derive and compare the proof-b role ARN
+        id: role
+        env:
+          ARTIFACT_PAGES_LANE: baseline
+          ARTIFACT_PAGES_SITE: proof-b-20261018
+          ARTIFACT_PAGES_EXPECTED_ROLE_ARN: ${{ vars.ARTIFACT_PAGES_PROOF_B_ROLE_ARN }}
+        run: ./scripts/derive-site-role.sh
+      - name: Assume the matching satellite role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ steps.role.outputs.role-arn }}
+          aws-region: us-east-1
+          role-session-name: provider-proof-b-preview
+      - name: Publish or dry-run the manually reviewed preview
+        uses: artifact-pages/preview-action@d4d96885d0d430bbe1591d3cc11207d92e680339 # v0.2.0
+        with:
+          site: proof-b-20261018
+          source: sites/b
+          head: ${{ inputs.reviewed_head }}
+          default-ref: refs/heads/main
+          pull-request: none
+          config: artifact-pages.yaml
+          dry-run: ${{ inputs.mode == 'dry-run' }}
+          comment: false
+          summary: true
+          checkout: false
+          fetch-depth: 0
+
+  preview-neighbor:
+    if: ${{ github.ref == 'refs/heads/main' && inputs.site == 'proof-neighbor-20261018' && inputs.operation == 'manual-preview' }}
+    runs-on: ubuntu-24.04
+    environment: proof-neighbor
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out main with full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify the reviewed preview head and merge base
+        env:
+          ARTIFACT_PAGES_REVIEWED_HEAD: ${{ inputs.reviewed_head }}
+        run: ./scripts/validate-manual-preview-head.sh
+      - name: Derive and compare the neighbor role ARN
+        id: role
+        env:
+          ARTIFACT_PAGES_LANE: baseline
+          ARTIFACT_PAGES_SITE: proof-neighbor-20261018
+          ARTIFACT_PAGES_EXPECTED_ROLE_ARN: ${{ vars.ARTIFACT_PAGES_PROOF_NEIGHBOR_ROLE_ARN }}
+        run: ./scripts/derive-site-role.sh
+      - name: Assume the matching satellite role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ steps.role.outputs.role-arn }}
+          aws-region: us-east-1
+          role-session-name: provider-proof-neighbor-preview
+      - name: Publish or dry-run the manually reviewed preview
+        uses: artifact-pages/preview-action@d4d96885d0d430bbe1591d3cc11207d92e680339 # v0.2.0
+        with:
+          site: proof-neighbor-20261018
+          source: sites/neighbor
+          head: ${{ inputs.reviewed_head }}
+          default-ref: refs/heads/main
+          pull-request: none
+          config: artifact-pages.yaml
+          dry-run: ${{ inputs.mode == 'dry-run' }}
+          comment: false
+          summary: true
+          checkout: false
+          fetch-depth: 0

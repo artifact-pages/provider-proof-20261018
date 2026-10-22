@@ -1,0 +1,21 @@
+@import "./nested/theme.css";
+
+:root {
+  --proof-main-css: loaded;
+}
+
+body {
+  font-family: "ProofFixture", sans-serif;
+  background: #f4f8ff;
+  color: #18243a;
+}
+
+@font-face {
+  font-family: "ProofFixture";
+  src: url("../fonts/proof.woff2") format("woff2");
+  font-display: swap;
+}
+
+.font-check {
+  font-family: "ProofFixture", sans-serif;
+}
