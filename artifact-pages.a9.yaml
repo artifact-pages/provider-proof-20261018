@@ -8,9 +8,9 @@ aws:
   accountId: "231136241959"
   namePrefix: ap-proof-20261018
   region: us-east-1
-  bucket: __SET_FROM_TERRAFORM_OUTPUT_BUCKET_NAME__
-  distributionId: __SET_FROM_TERRAFORM_OUTPUT_DISTRIBUTION_ID__
-publicBaseURL: https://__SET_FROM_TERRAFORM_OUTPUT_DISTRIBUTION_DOMAIN__
+  bucket: ap-proof-231136241959-20261018
+  distributionId: E3U1DSSB7D5VLR
+publicBaseURL: https://d2kyzdudhesmci.cloudfront.net
 sites:
   proof-a-20261018:
     name: Provider proof A
