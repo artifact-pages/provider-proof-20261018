@@ -7,3 +7,7 @@ This page tests Markdown delivery beneath a nested route. Its relative resource 
 The following raw HTML script is intentionally inert when the reader renders this document:
 
 <script>window.__proofMarkdownScriptRan = true;</script>
+
+## Preview change
+
+This paragraph exists only on the proof-preview-a branch (P3 manual preview).
