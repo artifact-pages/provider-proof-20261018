@@ -3,10 +3,10 @@ name: Provider proof A9 gzip lane
 # A9 Action SHAs must be replaced with the verified v0.3.0 package commits
 # before this workflow is dispatchable. The CLI version stays pinned in the
 # separate artifact-pages.a9.yaml config.
-# TODO_VERIFY_SHA_PUBLISH_V0_3_0: artifact-pages/publish-action; replace with the verified package commit.
-# TODO_VERIFY_SHA_PREVIEW_V0_3_0: artifact-pages/preview-action; verify the tuple even though this lane does not call preview.
-# TODO_VERIFY_SHA_REGISTRY_V0_3_0: artifact-pages/registry-action; replace with the verified package commit.
-# TODO_VERIFY_SHA_APP_DEPLOY_V0_3_0: artifact-pages/app-deploy-action; replace with the verified package commit.
+# artifact-pages/publish-action v0.3.0 = a95973781144589aeb03362ccfe93a3f809623ab (verified 2026-10-23)
+# artifact-pages/preview-action v0.3.0 = 838f97d870537aaeeb04f90c97bdcd116015575e (verified 2026-10-23; not called by this lane)
+# artifact-pages/registry-action v0.3.0 = d5abdecf0383f610b34b16f4a5b681699828d96d (verified 2026-10-23)
+# artifact-pages/app-deploy-action v0.3.0 = 0f7f0cf8e12c85f56d4aa7722f1fd3dcf3d58d03 (verified 2026-10-23)
 
 on:
   workflow_dispatch:
@@ -53,7 +53,7 @@ jobs:
           role-session-name: provider-proof-a9-admin
       - name: Deploy or dry-run the A9 reader app
         if: ${{ inputs.operation == 'app-dry-run' || inputs.operation == 'app-deploy' }}
-        uses: artifact-pages/app-deploy-action@TODO_VERIFY_SHA_APP_DEPLOY_V0_3_0 # v0.3.0
+        uses: artifact-pages/app-deploy-action@0f7f0cf8e12c85f56d4aa7722f1fd3dcf3d58d03 # v0.3.0
         with:
           config: artifact-pages.a9.yaml
           cli-version: 0.5.1
@@ -62,7 +62,7 @@ jobs:
           summary: true
       - name: Sync or dry-run the A9 registry
         if: ${{ inputs.operation == 'registry-dry-run' || inputs.operation == 'registry-sync' }}
-        uses: artifact-pages/registry-action@TODO_VERIFY_SHA_REGISTRY_V0_3_0 # v0.3.0
+        uses: artifact-pages/registry-action@d5abdecf0383f610b34b16f4a5b681699828d96d # v0.3.0
         with:
           config: artifact-pages.a9.yaml
           cli-version: 0.5.1
@@ -103,7 +103,7 @@ jobs:
           aws-region: us-east-1
           role-session-name: provider-proof-a9-site-a
       - name: Publish or dry-run the gzip-migrated proof-a site
-        uses: artifact-pages/publish-action@TODO_VERIFY_SHA_PUBLISH_V0_3_0 # v0.3.0
+        uses: artifact-pages/publish-action@a95973781144589aeb03362ccfe93a3f809623ab # v0.3.0
         with:
           site: proof-a-20261018
           source: sites/a
